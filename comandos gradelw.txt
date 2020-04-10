@@ -1,4 +1,17 @@
+Comandos GRadle
 ./gradlew clean build
-
-
 ./gradlew bootRun
+
+Notas:
+Peticion Usuario
+-> OrderController (controlador)
+--> OrderService (servicio)
+---> si es erroneo va al controlador de Excepciones
+----> Cliente
+
+
+JPA
+abstracion para que el codigo sea aislado de la base de datos
+Capas:
+Codigo de App -> Capa de JPA -> JDBC -> DB
+

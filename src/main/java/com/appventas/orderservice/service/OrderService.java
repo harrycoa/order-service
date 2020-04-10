@@ -5,6 +5,9 @@ import com.appventas.orderservice.dto.AccountDto;
 import com.appventas.orderservice.dto.OrderRequest;
 import com.appventas.orderservice.dto.OrderResponse;
 import com.appventas.orderservice.entities.Order;
+import com.appventas.orderservice.exception.AccountNotFoundException;
+import com.appventas.orderservice.util.ExceptionMessagesEnum;
+import com.appventas.orderservice.util.OrderValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,18 +23,13 @@ import java.util.List;
 public class OrderService {
     @Autowired
     private CustomerServiceClient customerClient;
+
     public Order createOrder(OrderRequest orderRequest){
-        AccountDto account = customerClient.findAccountById(orderRequest.getAccountId());
-        AccountDto dummyAccount = customerClient.createDummyAccount();
-        //dummyAccount = customerClient.createAccount(dummyAccount);
 
-        dummyAccount = customerClient.createAccountBody(dummyAccount);
-        dummyAccount.getAddress().setZipCode("+5151");
-        customerClient.updateAccount(dummyAccount);
-        AccountDto updateAccount = customerClient.findAccountById(orderRequest.getAccountId());
-        log.info(updateAccount.toString());
+        OrderValidator.validateOrder(orderRequest);
 
-        customerClient.deleteAccount(dummyAccount);
+        AccountDto account = customerClient.findAccount(orderRequest.getAccountId())
+                .orElseThrow(() -> new AccountNotFoundException(ExceptionMessagesEnum.ACCOUNT_NOT_FOUND.getValue()));
 
         Order response = new Order();
         response.setAccountId(orderRequest.getAccountId());
