@@ -1,9 +1,6 @@
 package com.appventas.orderservice.handler;
 
-import com.appventas.orderservice.exception.AccountNotFoundException;
-import com.appventas.orderservice.exception.IncorrectOrderRequestException;
-import com.appventas.orderservice.exception.NotImplementedRequestException;
-import com.appventas.orderservice.exception.OrderServiceExceptionResponse;
+import com.appventas.orderservice.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -51,6 +48,13 @@ public class OrderServiceExceptionHandler extends ResponseEntityExceptionHandler
         OrderServiceExceptionResponse response = new OrderServiceExceptionResponse(exception.getMessage(),
                 request.getDescription(false), HttpStatus.NOT_IMPLEMENTED, LocalDateTime.now());
 
+        return new ResponseEntity<>(response, response.getStatus());
+    }
+
+    //Agregamos una excepcion de Pagos para el handler
+    @ExceptionHandler(PaymentNotAcceptedException.class)
+    public ResponseEntity<Object> handlePaymentNotAcceptedResourceNotFound(PaymentNotAcceptedException exception, WebRequest request) {
+        OrderServiceExceptionResponse response = new OrderServiceExceptionResponse(exception.getMessage(), request.getDescription(false), HttpStatus.NOT_FOUND, LocalDateTime.now());
         return new ResponseEntity<>(response, response.getStatus());
     }
 
