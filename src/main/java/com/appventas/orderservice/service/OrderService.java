@@ -2,10 +2,7 @@ package com.appventas.orderservice.service;
 
 import com.appventas.orderservice.client.CustomerServiceClient;
 import com.appventas.orderservice.dao.JpaOrderDAO;
-import com.appventas.orderservice.dto.AccountDto;
-import com.appventas.orderservice.dto.Confirmation;
-import com.appventas.orderservice.dto.OrderRequest;
-import com.appventas.orderservice.dto.OrderResponse;
+import com.appventas.orderservice.dto.*;
 import com.appventas.orderservice.entities.Order;
 import com.appventas.orderservice.entities.OrderDetail;
 import com.appventas.orderservice.exception.AccountNotFoundException;
@@ -21,7 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.appventas.orderservice.client.InventoryServiceClient;
+import com.appventas.orderservice.producer.ShippingOrderProducer;
 
 import java.util.Date;
 import java.util.List;
@@ -48,8 +46,20 @@ public class OrderService {
     @Autowired
     private PaymentProcessorService  paymentService;
 
-    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
+    // Microservicio inventory
+    @Autowired
+    private InventoryServiceClient inventoryClient;
 
+    // Microservicio Shipping
+    @Autowired
+    private ShippingOrderProducer shipmentMessageProducer;
+
+    // MAiling
+    @Autowired
+    private OrderMailService mailService;
+
+
+    @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRED)
     public Order createOrder(OrderRequest orderRequest) throws PaymentNotAcceptedException {
 
         OrderValidator.validateOrder(orderRequest);
@@ -76,6 +86,12 @@ public class OrderService {
             orderRepository.save(newOrder);
             throw new PaymentNotAcceptedException("The Payment added to your account was not accepted, please verify.");
         }
+
+        log.info("Updating Inventory: {}", orderRequest.getItems());
+        inventoryClient.updateInventory(orderRequest.getItems());
+
+        log.info("Sending Request to Shipping Service.");
+        shipmentMessageProducer.send(newOrder.getOrderId(), account);
 
         return orderRepository.save(newOrder);
     }
@@ -131,6 +147,21 @@ public class OrderService {
         Optional<List<Order>> orders = Optional.ofNullable(orderRepository.findOrdersByAccountId(accountId));
         return orders
                 .orElseThrow(() -> new OrderNotFoundException("Order were not found"));
+    }
+
+    public void updateShipmentOrder(ShipmentOrderResponse response) {
+        try {
+            Order order = findOrderById(response.getOrderId());
+            order.setStatus(OrderStatus.valueOf(response.getShippingStatus()));
+            orderRepository.save(order);
+            mailService.sendEmail(order, response);
+        }
+        catch(OrderNotFoundException orderNotFound) {
+            log.info("The Following Order was not found: {} with tracking Id: {}", response.getOrderId(), response.getTrackingId());
+        }
+        catch(Exception e) {
+            log.info("An error occurred sending email: " + e.getMessage());
+        }
     }
 
     /* Reemplazamos los DAO por repository, ya que contamos con una clase repository

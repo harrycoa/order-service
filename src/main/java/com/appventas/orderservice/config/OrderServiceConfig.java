@@ -7,6 +7,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.beans.factory.annotation.Qualifier;
+
 
 @Getter
 @EnableJpaAuditing
@@ -20,6 +24,21 @@ public class OrderServiceConfig {
     //@Value("http://localhost:8087/api/v1/payment/authorize")
     @Value("${paymentservice.url}")
     private String paymentServiceUrl;
+
+    @Value("${inventoryservice.url}")
+    private String inventoryServiceUrl;
+
+
+    @Qualifier(value = "outbound")
+    @Bean
+    public Queue inboundShipmentOrder() {
+        return new Queue("INBOUND_SHIPMENT_ORDER", false, false, false);
+    }
+
+    @Bean
+    public Jackson2JsonMessageConverter converter() {
+        return new Jackson2JsonMessageConverter();
+    }
 
     @Bean
     public ModelMapper modelMapper(){

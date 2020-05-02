@@ -4,7 +4,11 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
+import lombok.AllArgsConstructor;
+
+
 @Data
+@AllArgsConstructor
 @ApiModel(description = "Clase representa un item incluido en la orden")
 public class LineItem {
     @ApiModelProperty(notes = "UPC codigo universal de un producto 12 digitos", example = "123456789123", required = true, position = 0)
