@@ -32,9 +32,14 @@ public class ShipmentOrderResponse implements Serializable {
     @JsonProperty("address")
     private AddressDto address;
 
+
+
     @JsonProperty("shippingDate")
     private Date shippingDate;
 
     @JsonProperty("deliveredDate")
     private Date deliveredDate;
+
+    @JsonProperty("shipmentAddress")
+    private AddressDto shippingAddress;
 }
